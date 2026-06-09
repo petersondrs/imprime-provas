@@ -275,7 +275,8 @@
       width: auto !important; max-width: none !important; min-height: 0 !important;
       box-shadow: none !important; padding: 0 !important; margin: 0 !important;
     }
-    .paper.gabarito { break-before: page; }
+    /* cada folha (prova ou gabarito) começa em uma página nova */
+    .paper + .paper { break-before: page; }
     /* quebra de página inserida pelo usuário: vira quebra real, sem linha/texto */
     .pp-break { margin: 0 !important; color: transparent !important; break-after: page; }
     .pp-break::before, .pp-break::after { border: 0 !important; }
@@ -438,19 +439,31 @@ const SAMPLE_SCRIPT = `# Geografia - V1
 **3.** Explique, com suas palavras, a diferença entre intemperismo e erosão.
 > Resposta: Intemperismo é o desgaste e a quebra da rocha; erosão é o transporte desses pedaços para outro lugar.`;
 
-const PROMPT_EXEMPLO = `Você é um professor que cria provas. Gere uma prova sobre ASSUNTO DA PROVA, para a série ANO/SÉRIE, com QUANTIDADE questões de múltipla escolha e QUANTIDADE questões discursivas.
+const PROMPT_EXEMPLO = `Você é um professor que cria provas. Gere QUANTIDADE DE SIMULADOS simulados (versões) de uma prova sobre ASSUNTO DA PROVA, para a série ANO/SÉRIE. Cada simulado deve ter QUANTIDADE questões de múltipla escolha e QUANTIDADE questões discursivas.
 
-Responda SOMENTE no formato abaixo, sem nenhum texto extra antes ou depois, seguindo EXATAMENTE estas regras:
+Antes de gerar, verifique se você encontra o conteúdo informado no fim nas suas fontes:
+- Se encontrar, gere os simulados normalmente.
+- Se NÃO encontrar, responda apenas com a frase: "Não encontrei conteúdo confiável sobre este assunto." e não gere nada.
+
+Regras dos simulados (versões):
+- Todas as versões cobrem o MESMO conteúdo, mas NÃO podem repetir o texto das perguntas.
+- Em cada versão, reformule os enunciados (mude a forma de perguntar) e troque os valores, números e exemplos.
+- As alternativas e o gabarito devem corresponder corretamente a cada versão.
+- Cada simulado tem seu próprio título: # MATÉRIA - V1, depois # MATÉRIA - V2, e assim por diante.
+- Não escreva nada entre um simulado e outro além do título do próximo.
+
+Ao gerar, responda SOMENTE no formato abaixo, sem nenhum texto extra antes ou depois, seguindo EXATAMENTE estas regras:
 - O título vem após "# ", no formato:  # MATÉRIA - V1
 - As seções são exatamente "## Múltipla Escolha" e "## Discursivas".
-- Cada pergunta começa com o número em negrito: **1.**, **2.**, etc.
+- Cada pergunta começa com o número em negrito: **1.**, **2.**, etc. (recomece a numeração em cada simulado).
 - Cada alternativa fica em uma linha começando com "- A)", "- B)", "- C)", "- D)".
 - A resposta certa vem em "> Correta: X" (apenas a letra).
 - A explicação vem em "> Comentário: ...".
 - Nas discursivas, a resposta esperada vem em "> Resposta: ...".
 - Fórmulas matemáticas devem vir em LaTeX entre cifrões: $\\sqrt{16}$, $\\frac{3}{4}$, $x^2$.
+- Em cada simulado, o total de questões deve respeitar a divisão por tipo (múltipla/discursiva) e os níveis de dificuldade do fim — as duas somas devem ser iguais.
 
-Siga este modelo exato:
+Siga este modelo exato (exemplo com 2 simulados):
 
 # Matéria - V1
 
@@ -467,7 +480,34 @@ Siga este modelo exato:
 ## Discursivas
 
 **2.** Texto da pergunta discursiva.
-> Resposta: Resposta esperada, explicada de forma objetiva.`;
+> Resposta: Resposta esperada, explicada de forma objetiva.
+
+# Matéria - V2
+
+## Múltipla Escolha
+
+**1.** O mesmo conteúdo perguntado de outra forma, com valores diferentes?
+- A) Primeira alternativa.
+- B) Segunda alternativa.
+- C) Terceira alternativa.
+- D) Quarta alternativa.
+> Correta: A
+> Comentário: Explicação curta da resposta.
+
+## Discursivas
+
+**2.** Pergunta discursiva reformulada, sobre o mesmo tema.
+> Resposta: Resposta esperada.
+
+Quantidade de simulados: QUANTIDADE DE SIMULADOS
+
+Conteúdo da prova:
+"CONTEÚDO DA PROVA AQUI"
+
+Níveis de dificuldade por simulado (quantas questões de cada):
+- Fácil = 0
+- Médio = 10
+- Difícil = 10`;
 
 const ACCENT_OPTIONS = ['#FF8552', '#297373', '#39393A', '#010400'];
 const TWEAK_DEFAULTS = { accent: '#FF8552', paperScale: 1, answerLines: 4 };
@@ -550,6 +590,26 @@ function parseExam(src) {
   return { title, blocks };
 }
 
+/* Separa o roteiro em vários simulados (cada "# Título" começa um novo) */
+function splitSimulados(src) {
+  const lines = (src || '').split(/\r?\n/);
+  const chunks = [];
+  let cur = [];
+  let started = false;
+  for (const raw of lines) {
+    const t = raw.trim();
+    if (/^#\s+/.test(t) && !/^#{2,}/.test(t)) {
+      if (started) chunks.push(cur.join('\n'));
+      cur = [raw];
+      started = true;
+    } else {
+      cur.push(raw);
+    }
+  }
+  if (cur.length) chunks.push(cur.join('\n'));
+  return chunks.length ? chunks : [src || ''];
+}
+
 /* ---------- Estado ---------- */
 let script = localStorage.getItem('ip_script');
 if (script === null) script = SAMPLE_SCRIPT;
@@ -608,11 +668,19 @@ function renderGabarito(doc) {
 }
 
 function renderAll() {
-  const doc = parseExam(script);
+  const docs = splitSimulados(script).map(parseExam);
   const canvas = document.getElementById('canvas');
-  let html = '<div class="paper" style="font-size:' + tweaks.paperScale + 'em">' + renderProva(doc) + '</div>';
-  if (temGabarito(doc)) {
-    html += '<div class="paper gabarito" style="font-size:' + tweaks.paperScale + 'em">' + renderGabarito(doc) + '</div>';
+  const fs = ' style="font-size:' + tweaks.paperScale + 'em"';
+  let html = '';
+  // Todas as provas primeiro
+  for (const doc of docs) {
+    html += '<div class="paper"' + fs + '>' + renderProva(doc) + '</div>';
+  }
+  // Depois todos os gabaritos (folhas separadas)
+  for (const doc of docs) {
+    if (temGabarito(doc)) {
+      html += '<div class="paper gabarito"' + fs + '>' + renderGabarito(doc) + '</div>';
+    }
   }
   canvas.innerHTML = html;
   typesetMath(canvas);
@@ -631,10 +699,14 @@ function typesetMath(el) {
 
 /* ---------- Contador ---------- */
 function updateHint() {
-  const doc = parseExam(script);
-  const q = doc.blocks.filter((b) => b.type === 'question').length;
-  document.getElementById('hint').textContent =
-    q + ' ' + (q === 1 ? 'questão' : 'questões') + ' · ' + script.length + ' caracteres';
+  const docs = splitSimulados(script).map(parseExam);
+  const q = docs.reduce((s, d) => s + d.blocks.filter((b) => b.type === 'question').length, 0);
+  const nsim = docs.filter((d) => d.blocks.length > 0).length;
+  const partes = [];
+  if (nsim > 1) partes.push(nsim + ' simulados');
+  partes.push(q + ' ' + (q === 1 ? 'questão' : 'questões'));
+  partes.push(script.length + ' caracteres');
+  document.getElementById('hint').textContent = partes.join(' · ');
 }
 
 /* ---------- Render geral (debounce) ---------- */
