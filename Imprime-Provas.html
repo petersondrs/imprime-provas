@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Imprime Provas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baskervville:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet" />
+
+<!-- Matematica: formulas escritas em LaTeX entre $...$ -->
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+    svg: { fontCache: 'global' },
+    startup: { typeset: false }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+<style>
+  :root {
+    --black: #010400;
+    --pine: #297373;
+    --coral: #FF8552;
+    --alabaster: #E3E3E3;
+    --graphite: #39393A;
+
+    --accent: #FF8552;
+    --app-bg: #fafaf9;
+    --panel: #ffffff;
+    --canvas-bg: #e3e3e3;
+    --ink: #010400;
+    --muted: #6c6c6d;
+    --line: rgba(1, 4, 0, 0.14);
+    --hairline: rgba(1, 4, 0, 0.08);
+
+    --serif: 'Baskervville', Georgia, 'Times New Roman', serif;
+    --mono: 'SFMono-Regular', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: var(--serif);
+    color: var(--ink);
+    background: var(--app-bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .app { height: 100%; display: flex; flex-direction: column; }
+
+  /* Header */
+  .app-header {
+    flex: 0 0 auto;
+    height: 60px;
+    padding: 0 26px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--hairline);
+    position: relative;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; flex: 0 0 auto; }
+  .brand-mark {
+    width: 16px; height: 16px; border-radius: 4px;
+    background: var(--pine);
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.85), 0 0 0 1px var(--pine);
+  }
+  .brand-name { font-size: 21px; font-weight: 700; letter-spacing: 0.01em; white-space: nowrap; }
+  .app-sub { font-size: 14.5px; color: var(--muted); font-style: italic; margin-left: 4px; padding-left: 18px; border-left: 1px solid var(--hairline); }
+
+  /* Settings button + panel */
+  .settings-btn {
+    margin-left: auto; flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--serif); font-size: 15px; color: var(--ink);
+    background: transparent; border: 1px solid var(--line);
+    border-radius: 9px; padding: 8px 14px; cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .settings-btn:hover { background: #f4f4f2; border-color: var(--muted); }
+  .settings-btn svg { stroke: var(--ink); }
+
+  .settings-panel {
+    position: absolute; top: 56px; right: 18px; width: 300px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.14);
+    padding: 18px 18px 20px; z-index: 50; display: none;
+  }
+  .settings-panel.open { display: block; }
+  .set-group { margin-bottom: 16px; }
+  .set-group:last-child { margin-bottom: 0; }
+  .set-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 9px; }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+  .set-row:last-child { margin-bottom: 0; }
+  .set-row span { font-size: 14.5px; }
+  .swatches { display: flex; gap: 9px; }
+  .swatch { width: 28px; height: 28px; border-radius: 7px; cursor: pointer; border: 2px solid transparent; box-shadow: 0 0 0 1px var(--hairline); }
+  .swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--ink); }
+  .set-row input[type="range"] { flex: 1 1 auto; accent-color: var(--accent); }
+  .set-val { font-size: 13px; color: var(--muted); min-width: 34px; text-align: right; font-family: var(--mono); }
+
+  /* Ações do cabeçalho (direita) */
+  .header-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .prompt-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--serif); font-size: 15px; color: #fff;
+    background: var(--pine); border: none; border-radius: 9px;
+    padding: 9px 15px; cursor: pointer;
+    transition: filter .15s ease;
+  }
+  .prompt-btn:hover { filter: brightness(1.05); }
+  .prompt-btn svg { stroke: #fff; }
+
+  /* Ferramentas abaixo do roteiro */
+  .editor-tools { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .tool-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--serif); font-size: 14px; color: var(--ink);
+    background: #fff; border: 1.5px solid var(--coral);
+    border-radius: 8px; padding: 8px 13px; cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .tool-btn:hover { background: rgba(255, 133, 82, 0.1); border-color: var(--coral); }
+  .tool-btn svg { stroke: var(--coral); }
+
+  /* Modal "Exemplo de prompt" */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(1, 4, 0, 0.45);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel); border-radius: 16px; width: 100%; max-width: 660px;
+    max-height: 84vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden;
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 14px;
+  }
+  .modal-head h3 { margin: 0; font-size: 20px; font-weight: 700; }
+  .modal-close {
+    border: none; background: transparent; font-size: 22px; line-height: 1;
+    color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 8px;
+  }
+  .modal-close:hover { background: #f0f0ee; color: var(--ink); }
+  .modal-desc { margin: 0; padding: 0 24px 14px; font-size: 14.5px; color: var(--muted); }
+  .modal-pre {
+    margin: 0 24px; padding: 16px 18px; background: #f6f6f4;
+    border: 1px solid var(--hairline); border-radius: 10px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-word; overflow: auto; color: var(--ink);
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px 22px; }
+  .btn-copy {
+    font-family: var(--serif); font-size: 15px; font-weight: 700; color: #fff;
+    background: var(--accent); border: none; border-radius: 9px; padding: 11px 20px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255, 133, 82, 0.32); transition: filter .15s ease;
+  }
+  .btn-copy:hover { filter: brightness(1.04); }
+
+  /* Workspace */
+  .workspace { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(360px, 0.82fr) 1.18fr; }
+
+  /* Editor */
+  .editor {
+    display: flex; flex-direction: column; min-height: 0;
+    background: var(--panel); border-right: 1px solid var(--hairline);
+    padding: 22px 24px 18px;
+  }
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .panel-head h2 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .hint { font-size: 13px; color: var(--muted); }
+
+  .script-input {
+    flex: 1 1 auto; min-height: 0; width: 100%; resize: none;
+    border: 1px solid var(--line); border-radius: 10px; background: #fcfcfb;
+    padding: 18px 20px; font-family: var(--mono); font-size: 13.5px;
+    line-height: 1.7; color: var(--ink); tab-size: 2; outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .script-input::placeholder { color: #b7b7b6; }
+  .script-input:focus { border-color: var(--pine); box-shadow: 0 0 0 3px rgba(41, 115, 115, 0.12); }
+
+  .legend { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 7px; }
+  .legend code {
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    background: #f0f0ee; border: 1px solid var(--hairline);
+    border-radius: 6px; padding: 4px 8px;
+  }
+
+  /* Preview */
+  .preview-pane { display: flex; flex-direction: column; min-height: 0; background: var(--canvas-bg); }
+  .canvas {
+    flex: 1 1 auto; min-height: 0; overflow: auto;
+    padding: 38px 0 46px;
+    display: flex; flex-direction: column; align-items: center; gap: 34px;
+  }
+
+  .paper {
+    width: 210mm; max-width: calc(100% - 64px); min-height: 297mm;
+    background: #fff; color: #111;
+    box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 18px 44px rgba(0,0,0,.16);
+    padding: 10mm; font-size: 10pt; line-height: 1.5;
+  }
+
+  .pp-head { border-bottom: 1.5px solid #111; padding-bottom: 10px; margin-bottom: 18px; }
+  .pp-title { margin: 0; font-size: 1.2em; font-weight: 700; text-align: center; letter-spacing: 0.01em; }
+  .pp-sub { margin-top: 6px; text-align: center; font-size: 0.92em; color: #333; }
+
+  .pp-section {
+    margin: 20px 0 10px; font-size: 1em; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase; color: #111;
+    border-left: 3px solid var(--accent); padding-left: 10px;
+  }
+  .pp-text { margin: 0 0 10px; color: #333; font-style: italic; }
+
+  /* Quebra de página e linha inseridas pelo usuário */
+  .pp-hr { border: 0; border-top: 1px solid #111; margin: 14px 0; }
+  .pp-break {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--muted); font-size: 0.85em; letter-spacing: 0.04em;
+    margin: 18px 0; text-transform: uppercase;
+  }
+  .pp-break::before, .pp-break::after { content: ''; flex: 1; border-top: 1px dashed #b9b9b8; }
+
+  .pp-q { margin: 0 0 20px; break-inside: avoid; }
+  .pp-q-stmt { margin: 0 0 8px; display: grid; grid-template-columns: auto 1fr; column-gap: 9px; align-items: baseline; font-weight: 400; }
+  .pp-q-num { font-weight: 700; color: var(--accent); }
+  .pp-q-stmt > span:last-child { text-wrap: pretty; }
+
+  .pp-opts { list-style: none; margin: 0; padding: 0 0 0 26px; display: flex; flex-direction: column; gap: 6px; }
+  .pp-opts li { display: grid; grid-template-columns: 1.6em 1fr; column-gap: 6px; align-items: baseline; }
+  .pp-opt-mark { font-weight: 700; }
+
+  .pp-lines { padding-left: 26px; display: flex; flex-direction: column; gap: 0; margin-top: 4px; }
+  .pp-line { display: block; height: 1.75em; border-bottom: 1px solid #c7c7c7; }
+
+  .pp-empty { color: #aaa; font-style: italic; text-align: center; margin-top: 30px; }
+
+  /* Gabarito (folha separada) */
+  .gab-list { margin-top: 4px; }
+  .gab-item { margin: 0 0 9px; display: grid; grid-template-columns: auto 1fr; column-gap: 9px; align-items: baseline; }
+  .gab-num { font-weight: 700; color: var(--accent); }
+
+  /* Footer / print button */
+  .preview-footer {
+    flex: 0 0 auto; height: 76px; padding: 0 30px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel); border-top: 1px solid var(--hairline);
+  }
+  .paper-tag { font-size: 13px; color: var(--muted); letter-spacing: 0.03em; }
+  .btn-print {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--serif); font-size: 17px; font-weight: 700;
+    letter-spacing: 0.02em; color: #fff; background: var(--accent);
+    border: none; border-radius: 10px; padding: 13px 28px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255, 133, 82, 0.32);
+    transition: transform .12s ease, filter .15s ease, box-shadow .15s ease;
+  }
+  .btn-print:hover { filter: brightness(1.04); box-shadow: 0 4px 14px rgba(255, 133, 82, 0.42); }
+  .btn-print:active { transform: translateY(1px); }
+  .btn-print svg { stroke: #fff; }
+
+  /* Print */
+  @media print {
+    .app-header, .editor, .preview-footer, .settings-panel, .settings-btn, .modal-overlay { display: none !important; }
+    html, body, .app, .workspace, .preview-pane { height: auto !important; display: block !important; background: #fff !important; }
+    .canvas { overflow: visible !important; padding: 0 !important; display: block !important; background: #fff !important; gap: 0 !important; }
+    .paper {
+      width: auto !important; max-width: none !important; min-height: 0 !important;
+      box-shadow: none !important; padding: 0 !important; margin: 0 !important;
+    }
+    .paper.gabarito { break-before: page; }
+    /* quebra de página inserida pelo usuário: vira quebra real, sem linha/texto */
+    .pp-break { margin: 0 !important; color: transparent !important; break-after: page; }
+    .pp-break::before, .pp-break::after { border: 0 !important; }
+    @page { size: A4; margin: 10mm; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <span class="brand-name">Imprime Provas</span>
+    </div>
+    <span class="app-sub">Editor de provas para impressão</span>
+
+    <div class="header-actions">
+      <button class="prompt-btn" id="promptBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <path d="M14 2v6h6"></path>
+          <path d="M8 13h8M8 17h8M8 9h2"></path>
+        </svg>
+        Exemplo de prompt
+      </button>
+
+      <button class="settings-btn" id="settingsBtn" aria-label="Ajustes">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      Ajustes
+    </button>
+    </div>
+
+    <div class="settings-panel" id="settingsPanel">
+      <div class="set-group">
+        <div class="set-label">Aparência</div>
+        <div class="set-row">
+          <span>Cor de destaque</span>
+          <div class="swatches" id="swatches"></div>
+        </div>
+        <div class="set-row">
+          <span>Tamanho do texto</span>
+          <input type="range" id="paperScale" min="0.85" max="1.3" step="0.05" />
+          <span class="set-val" id="paperScaleVal"></span>
+        </div>
+      </div>
+      <div class="set-group">
+        <div class="set-label">Respostas</div>
+        <div class="set-row">
+          <span>Linhas p/ discursivas</span>
+          <input type="range" id="answerLines" min="2" max="8" step="1" />
+          <span class="set-val" id="answerLinesVal"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="editor">
+      <div class="panel-head">
+        <h2>Roteiro</h2>
+        <span class="hint" id="hint"></span>
+      </div>
+      <textarea class="script-input" id="script" spellcheck="false"
+        placeholder="# Matéria - V1&#10;&#10;## Múltipla Escolha&#10;&#10;**1.** Enunciado da questão?&#10;- A) alternativa&#10;- B) alternativa&#10;> Correta: A&#10;> Comentário: explicação&#10;&#10;## Discursivas&#10;&#10;**2.** Pergunta discursiva.&#10;> Resposta: resposta esperada"></textarea>
+      <div class="editor-tools">
+        <button class="tool-btn" id="btnBreak" title="Insere uma quebra de página na posição do cursor">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18M3 18h18"></path>
+            <path d="M12 9v6M9.5 12.5 12 15l2.5-2.5"></path>
+          </svg>
+          Quebra de página
+        </button>
+        <button class="tool-btn" id="btnHr" title="Insere uma linha horizontal na posição do cursor">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 12h16"></path>
+          </svg>
+          Inserir linha
+        </button>
+      </div>
+      <div class="legend">
+        <code># Matéria - V1</code>
+        <code>## Seção</code>
+        <code>**1.** Questão</code>
+        <code>- A) Alternativa</code>
+        <code>&gt; Correta: C</code>
+        <code>&gt; Comentário:</code>
+        <code>&gt; Resposta:</code>
+        <code>$\sqrt{x}$ fórmula</code>
+      </div>
+    </section>
+
+    <div class="preview-pane">
+      <div class="canvas" id="canvas"></div>
+      <footer class="preview-footer">
+        <span class="paper-tag">A4 · Pré-visualização</span>
+        <button class="btn-print" id="printBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9V3h12v6"></path>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="7" rx="1"></rect>
+          </svg>
+          Imprimir
+        </button>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="promptModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Exemplo de prompt para o Gemini</h3>
+      <button class="modal-close" id="modalClose" aria-label="Fechar">&times;</button>
+    </div>
+    <p class="modal-desc">Copie o texto abaixo e cole no Gemini, trocando o que está em MAIÚSCULAS.
+      Ele vai responder no formato certo — depois é só colar a resposta aqui no editor.</p>
+    <pre class="modal-pre" id="promptText"></pre>
+    <div class="modal-actions">
+      <button class="btn-copy" id="copyPrompt">Copiar prompt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================================================================
+   Imprime Provas — editor + folha A4 + gabarito (folha separada)
+   Formato do roteiro = igual aos arquivos .md / prompt do Gemini.
+   =================================================================== */
+
+const SAMPLE_SCRIPT = `# Geografia - V1
+
+## Múltipla Escolha
+
+**1.** Qual é o nome da camada mais fina e superficial do planeta?
+- A) Manto.
+- B) Núcleo externo.
+- C) Crosta terrestre.
+- D) Núcleo interno.
+> Correta: C
+> Comentário: A crosta terrestre é a camada sólida e externa onde vivemos.
+
+**2.** Quanto vale $\\sqrt{16}$ somado a $\\frac{3}{4}$?
+- A) 4,75
+- B) 5
+- C) 3
+- D) 8
+> Correta: A
+> Comentário: $\\sqrt{16}=4$ e $\\frac{3}{4}=0{,}75$, logo o total é 4,75.
+
+## Discursivas
+
+**3.** Explique, com suas palavras, a diferença entre intemperismo e erosão.
+> Resposta: Intemperismo é o desgaste e a quebra da rocha; erosão é o transporte desses pedaços para outro lugar.`;
+
+const PROMPT_EXEMPLO = `Você é um professor que cria provas. Gere uma prova sobre ASSUNTO DA PROVA, para a série ANO/SÉRIE, com QUANTIDADE questões de múltipla escolha e QUANTIDADE questões discursivas.
+
+Responda SOMENTE no formato abaixo, sem nenhum texto extra antes ou depois, seguindo EXATAMENTE estas regras:
+- O título vem após "# ", no formato:  # MATÉRIA - V1
+- As seções são exatamente "## Múltipla Escolha" e "## Discursivas".
+- Cada pergunta começa com o número em negrito: **1.**, **2.**, etc.
+- Cada alternativa fica em uma linha começando com "- A)", "- B)", "- C)", "- D)".
+- A resposta certa vem em "> Correta: X" (apenas a letra).
+- A explicação vem em "> Comentário: ...".
+- Nas discursivas, a resposta esperada vem em "> Resposta: ...".
+- Fórmulas matemáticas devem vir em LaTeX entre cifrões: $\\sqrt{16}$, $\\frac{3}{4}$, $x^2$.
+
+Siga este modelo exato:
+
+# Matéria - V1
+
+## Múltipla Escolha
+
+**1.** Texto da pergunta, podendo ter fórmula como $\\sqrt{25}$?
+- A) Primeira alternativa.
+- B) Segunda alternativa.
+- C) Terceira alternativa.
+- D) Quarta alternativa.
+> Correta: C
+> Comentário: Explicação curta do porquê a alternativa C está certa.
+
+## Discursivas
+
+**2.** Texto da pergunta discursiva.
+> Resposta: Resposta esperada, explicada de forma objetiva.`;
+
+const ACCENT_OPTIONS = ['#FF8552', '#297373', '#39393A', '#010400'];
+const TWEAK_DEFAULTS = { accent: '#FF8552', paperScale: 1, answerLines: 4 };
+
+/* ---------- Helpers ---------- */
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function fmt(s) {
+  return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+}
+function normalize(s) {
+  return s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+const mark = (i) => String.fromCharCode(65 + i); // A, B, C...
+
+/* ---------- Parser (mesmo formato dos .md) ---------- */
+function parseExam(src) {
+  const lines = (src || '').split(/\r?\n/);
+  let title = '';
+  const blocks = [];
+  let cur = null;
+  let sawQ = false;
+  const flush = () => { if (cur) { blocks.push(cur); cur = null; } };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    let m;
+
+    // Seção: ## Texto
+    if ((m = line.match(/^#{2,}\s+(.*)/))) { flush(); blocks.push({ type: 'section', text: m[1].trim() }); continue; }
+    // Título: # Texto (primeiro do preâmbulo)
+    if (!title && !sawQ && (m = line.match(/^#\s+(.*)/))) { title = m[1].trim(); continue; }
+
+    // Quebra de página inserida pelo usuário: [quebra de página]
+    if (/^\[\s*quebra/i.test(line)) { flush(); blocks.push({ type: 'pagebreak' }); continue; }
+    // Linha horizontal: ---, ___, ***
+    if (/^[-_*]{3,}\s*$/.test(line)) { flush(); blocks.push({ type: 'hr' }); continue; }
+
+    // Metadados do gabarito: > Correta / > Comentário / > Resposta
+    if (line.startsWith('>')) {
+      if (cur) {
+        const body = line.replace(/^>+/, '').trim();
+        const idx = body.indexOf(':');
+        const key = normalize(idx >= 0 ? body.slice(0, idx) : body);
+        const val = idx >= 0 ? body.slice(idx + 1).trim() : '';
+        if (key.includes('correta') || key.includes('gabarito')) {
+          const L = val.match(/[A-Ea-e]/);
+          cur.correta = L ? L[0].toUpperCase() : val;
+        } else if (key.includes('coment')) {
+          cur.comentario = val;
+        } else if (key.includes('resposta') || key.includes('espera')) {
+          cur.resposta = val;
+        }
+      }
+      continue;
+    }
+
+    // Pergunta: **1.** / 1. / 1) / 1 -
+    const qline = line.replace(/^\*+/, '').trim();
+    if ((m = qline.match(/^(\d+)\s*[.)\-]\s*(.*)/))) {
+      flush(); sawQ = true;
+      const stmt = m[2].replace(/^\*+/, '').trim();
+      cur = { type: 'question', statement: stmt, options: [], correta: '', comentario: '', resposta: '' };
+      continue;
+    }
+
+    // Alternativa: - A) / A) / (a)
+    if (cur && (m = line.match(/^[-*(]?\s*([A-Ea-e])\s*[.)\-:]\s+(.*)/))) {
+      cur.options.push(m[2].trim());
+      continue;
+    }
+
+    // Continuação do enunciado
+    if (cur) { cur.statement += ' ' + line; }
+    else { blocks.push({ type: 'text', text: line }); }
+  }
+  flush();
+  return { title, blocks };
+}
+
+/* ---------- Estado ---------- */
+let script = localStorage.getItem('ip_script');
+if (script === null) script = SAMPLE_SCRIPT;
+let tweaks = Object.assign({}, TWEAK_DEFAULTS);
+try { Object.assign(tweaks, JSON.parse(localStorage.getItem('ip_tweaks') || '{}')); } catch (e) {}
+
+/* ---------- Render ---------- */
+function renderProva(doc) {
+  let html = '<header class="pp-head"><h1 class="pp-title">' + fmt(doc.title || 'Prova') + '</h1></header><div class="pp-body">';
+  let qNum = 0;
+  for (const b of doc.blocks) {
+    if (b.type === 'section') { html += '<h2 class="pp-section">' + fmt(b.text) + '</h2>'; continue; }
+    if (b.type === 'text') { html += '<p class="pp-text">' + fmt(b.text) + '</p>'; continue; }
+    if (b.type === 'hr') { html += '<hr class="pp-hr">'; continue; }
+    if (b.type === 'pagebreak') { html += '<div class="pp-break">Quebra de página</div>'; continue; }
+    qNum += 1; b._n = qNum;
+    html += '<div class="pp-q"><p class="pp-q-stmt"><span class="pp-q-num">' + qNum + '.</span><span>' + fmt(b.statement) + '</span></p>';
+    if (b.options.length > 0) {
+      html += '<ol class="pp-opts">';
+      b.options.forEach((o, j) => { html += '<li><span class="pp-opt-mark">' + mark(j) + ')</span><span>' + fmt(o) + '</span></li>'; });
+      html += '</ol>';
+    } else {
+      html += '<div class="pp-lines">';
+      for (let k = 0; k < tweaks.answerLines; k++) html += '<span class="pp-line"></span>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  if (doc.blocks.length === 0) html += '<p class="pp-empty">Cole o roteiro da prova à esquerda para visualizar aqui.</p>';
+  html += '</div>';
+  return html;
+}
+
+function temGabarito(doc) {
+  return doc.blocks.some((b) => b.type === 'question' &&
+    ((b.options.length > 0 && (b.correta || b.comentario)) || (b.options.length === 0 && b.resposta)));
+}
+
+function renderGabarito(doc) {
+  let html = '<header class="pp-head"><h1 class="pp-title">Gabarito</h1>';
+  if (doc.title) html += '<div class="pp-sub">' + fmt(doc.title) + '</div>';
+  html += '</header><div class="gab-list">';
+  for (const b of doc.blocks) {
+    if (b.type === 'section') { html += '<h2 class="pp-section">' + fmt(b.text) + '</h2>'; continue; }
+    if (b.type !== 'question') continue;
+    let ans;
+    if (b.options.length > 0) {
+      ans = '<b>' + esc(b.correta || '?') + '</b>' + (b.comentario ? ' — ' + fmt(b.comentario) : '');
+    } else {
+      ans = b.resposta ? fmt(b.resposta) : '—';
+    }
+    html += '<p class="gab-item"><span class="gab-num">' + b._n + '.</span><span>' + ans + '</span></p>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderAll() {
+  const doc = parseExam(script);
+  const canvas = document.getElementById('canvas');
+  let html = '<div class="paper" style="font-size:' + tweaks.paperScale + 'em">' + renderProva(doc) + '</div>';
+  if (temGabarito(doc)) {
+    html += '<div class="paper gabarito" style="font-size:' + tweaks.paperScale + 'em">' + renderGabarito(doc) + '</div>';
+  }
+  canvas.innerHTML = html;
+  typesetMath(canvas);
+}
+
+/* ---------- Matemática (MathJax) ---------- */
+let mathTimer = null;
+function typesetMath(el) {
+  if (!(window.MathJax && MathJax.typesetPromise)) return;
+  clearTimeout(mathTimer);
+  mathTimer = setTimeout(() => {
+    try { MathJax.typesetClear && MathJax.typesetClear([el]); } catch (e) {}
+    MathJax.typesetPromise([el]).catch(() => {});
+  }, 60);
+}
+
+/* ---------- Contador ---------- */
+function updateHint() {
+  const doc = parseExam(script);
+  const q = doc.blocks.filter((b) => b.type === 'question').length;
+  document.getElementById('hint').textContent =
+    q + ' ' + (q === 1 ? 'questão' : 'questões') + ' · ' + script.length + ' caracteres';
+}
+
+/* ---------- Render geral (debounce) ---------- */
+let renderTimer = null;
+function scheduleRender() {
+  updateHint();
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(renderAll, 120);
+}
+
+/* ---------- Ajustes ---------- */
+function applyAccent() { document.documentElement.style.setProperty('--accent', tweaks.accent); }
+function saveTweaks() { localStorage.setItem('ip_tweaks', JSON.stringify(tweaks)); }
+
+function buildSwatches() {
+  const wrap = document.getElementById('swatches');
+  wrap.innerHTML = '';
+  ACCENT_OPTIONS.forEach((c) => {
+    const s = document.createElement('div');
+    s.className = 'swatch' + (c === tweaks.accent ? ' active' : '');
+    s.style.background = c; s.title = c;
+    s.addEventListener('click', () => { tweaks.accent = c; applyAccent(); saveTweaks(); buildSwatches(); });
+    wrap.appendChild(s);
+  });
+}
+
+function initSettings() {
+  buildSwatches();
+
+  const ps = document.getElementById('paperScale');
+  const psv = document.getElementById('paperScaleVal');
+  ps.value = tweaks.paperScale;
+  psv.textContent = Math.round(tweaks.paperScale * 100) + '%';
+  ps.addEventListener('input', () => {
+    tweaks.paperScale = parseFloat(ps.value);
+    psv.textContent = Math.round(tweaks.paperScale * 100) + '%';
+    saveTweaks(); renderAll();
+  });
+
+  const al = document.getElementById('answerLines');
+  const alv = document.getElementById('answerLinesVal');
+  al.value = tweaks.answerLines;
+  alv.textContent = tweaks.answerLines;
+  al.addEventListener('input', () => {
+    tweaks.answerLines = parseInt(al.value, 10);
+    alv.textContent = tweaks.answerLines;
+    saveTweaks(); renderAll();
+  });
+
+  const btn = document.getElementById('settingsBtn');
+  const panel = document.getElementById('settingsPanel');
+  btn.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('open'); });
+  document.addEventListener('click', (e) => {
+    if (!panel.contains(e.target) && e.target !== btn) panel.classList.remove('open');
+  });
+}
+
+/* ---------- Inicialização ---------- */
+const ta = document.getElementById('script');
+ta.value = script;
+ta.addEventListener('input', () => {
+  script = ta.value;
+  localStorage.setItem('ip_script', script);
+  scheduleRender();
+});
+
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+/* ---------- Inserir tokens no roteiro (na posição do cursor) ---------- */
+function insertToken(token) {
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const before = ta.value.slice(0, start);
+  const after = ta.value.slice(end);
+  let ins = token;
+  if (before.length && !before.endsWith('\n')) ins = '\n' + ins;   // garante linha própria
+  if (!after.startsWith('\n')) ins = ins + '\n';
+  ta.value = before + ins + after;
+  script = ta.value;
+  localStorage.setItem('ip_script', script);
+  const pos = (before + ins).length;
+  ta.focus();
+  ta.setSelectionRange(pos, pos);
+  scheduleRender();
+}
+document.getElementById('btnBreak').addEventListener('click', () => insertToken('[quebra de página]'));
+document.getElementById('btnHr').addEventListener('click', () => insertToken('---'));
+
+/* ---------- Modal "Exemplo de prompt" ---------- */
+const modal = document.getElementById('promptModal');
+document.getElementById('promptText').textContent = PROMPT_EXEMPLO;
+document.getElementById('promptBtn').addEventListener('click', () => modal.classList.add('open'));
+document.getElementById('modalClose').addEventListener('click', () => modal.classList.remove('open'));
+modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') modal.classList.remove('open'); });
+document.getElementById('copyPrompt').addEventListener('click', (e) => {
+  const btn = e.currentTarget;
+  const done = (txt) => { const o = btn.textContent; btn.textContent = txt; setTimeout(() => { btn.textContent = o; }, 1600); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(PROMPT_EXEMPLO).then(() => done('Copiado!')).catch(() => done('Selecione e copie manualmente'));
+  } else {
+    done('Selecione e copie manualmente');
+  }
+});
+
+applyAccent();
+initSettings();
+updateHint();
+renderAll();
+if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+  MathJax.startup.promise.then(() => renderAll());
+}
+</script>
+</body>
+</html>
