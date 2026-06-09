@@ -363,6 +363,14 @@
           </svg>
           Inserir linha
         </button>
+        <button class="tool-btn" id="btnLineBreak" title="Insere uma quebra de linha na posição do cursor">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 4v7a4 4 0 0 1-4 4H5"></path>
+            <polyline points="9 11 5 15 9 19"></polyline>
+          </svg>
+          Quebra de linha
+        </button>
       </div>
       <div class="legend">
         <code># Matéria - V1</code>
@@ -518,7 +526,15 @@ function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 function fmt(s) {
-  return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  // separa trechos de fórmula $...$ para não aplicar negrito/itálico dentro deles
+  return s.split(/(\$[^$]*\$)/).map(function (part) {
+    if (part.length >= 2 && part.charAt(0) === '$' && part.charAt(part.length - 1) === '$') {
+      return esc(part); // fórmula: mantém para o MathJax, só protege < > &
+    }
+    return esc(part)
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')   // **negrito**
+      .replace(/\*(.+?)\*/g, '<i>$1</i>');      // *itálico*
+  }).join('');
 }
 function normalize(s) {
   return s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -791,6 +807,7 @@ function insertToken(token) {
 }
 document.getElementById('btnBreak').addEventListener('click', () => insertToken('[quebra de página]'));
 document.getElementById('btnHr').addEventListener('click', () => insertToken('---'));
+document.getElementById('btnLineBreak').addEventListener('click', () => insertToken('\n'));
 
 /* ---------- Modal "Exemplo de prompt" ---------- */
 const modal = document.getElementById('promptModal');

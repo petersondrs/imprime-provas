@@ -197,7 +197,8 @@ def _renderizar_formula(formula):
 def _escapar(texto):
     """Protege caracteres especiais e converte **negrito** do Markdown."""
     texto = texto.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    texto = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", texto)
+    texto = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", texto)   # **negrito**
+    texto = re.sub(r"\*(.+?)\*", r"<i>\1</i>", texto)       # *itálico*
     return texto
 
 
