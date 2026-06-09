@@ -203,6 +203,7 @@
 
   .paper {
     width: 210mm; max-width: calc(100% - 64px); min-height: 297mm;
+    flex-shrink: 0;            /* não deixa o flex encolher a folha (conteúdo cresce livremente) */
     background: #fff; color: #111;
     box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 18px 44px rgba(0,0,0,.16);
     padding: 10mm; font-size: 10pt; line-height: 1.5;
@@ -670,19 +671,16 @@ function renderGabarito(doc) {
 function renderAll() {
   const docs = splitSimulados(script).map(parseExam);
   const canvas = document.getElementById('canvas');
-  const fs = ' style="font-size:' + tweaks.paperScale + 'em"';
-  let html = '';
+  const partes = [];
   // Todas as provas primeiro
-  for (const doc of docs) {
-    html += '<div class="paper"' + fs + '>' + renderProva(doc) + '</div>';
-  }
-  // Depois todos os gabaritos (folhas separadas)
-  for (const doc of docs) {
-    if (temGabarito(doc)) {
-      html += '<div class="paper gabarito"' + fs + '>' + renderGabarito(doc) + '</div>';
-    }
-  }
-  canvas.innerHTML = html;
+  for (const doc of docs) partes.push(renderProva(doc));
+  // Depois todos os gabaritos
+  for (const doc of docs) { if (temGabarito(doc)) partes.push(renderGabarito(doc)); }
+  // Tudo em UMA folha contínua, separado por marcações de quebra de página
+  // (na impressão, cada marcação vira uma quebra real)
+  const sep = '<div class="pp-break">Quebra de página</div>';
+  const inner = partes.join(sep);
+  canvas.innerHTML = '<div class="paper" style="font-size:' + tweaks.paperScale + 'em">' + inner + '</div>';
   typesetMath(canvas);
 }
 
