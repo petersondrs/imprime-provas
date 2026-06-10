@@ -448,75 +448,62 @@ const SAMPLE_SCRIPT = `# Geografia - V1
 **3.** Explique, com suas palavras, a diferença entre intemperismo e erosão.
 > Resposta: Intemperismo é o desgaste e a quebra da rocha; erosão é o transporte desses pedaços para outro lugar.`;
 
-const PROMPT_EXEMPLO = `Você é um professor que cria provas. Gere QUANTIDADE DE SIMULADOS simulados (versões) de uma prova sobre ASSUNTO DA PROVA, para a série ANO/SÉRIE. Cada simulado deve ter QUANTIDADE questões de múltipla escolha e QUANTIDADE questões discursivas.
+const PROMPT_EXEMPLO = `Você é um professor que cria provas. Gere QUANTIDADE simulados sobre ASSUNTO, para ANO/SÉRIE, com QUANTIDADE questões de múltipla escolha e QUANTIDADE discursivas cada.
 
-Antes de gerar, verifique se você encontra o conteúdo informado no fim nas suas fontes:
-- Se encontrar, gere os simulados normalmente.
-- Se NÃO encontrar, responda apenas com a frase: "Não encontrei conteúdo confiável sobre este assunto." e não gere nada.
+Verifique nas fontes se o conteúdo do fim existe:
+- Se sim: gere normalmente.
+- Se não: responda só "Não encontrei conteúdo confiável sobre este assunto." e pare.
 
-Regras dos simulados (versões):
-- Todas as versões cobrem o MESMO conteúdo, mas NÃO podem repetir o texto das perguntas.
-- Em cada versão, reformule os enunciados (mude a forma de perguntar) e troque os valores, números e exemplos.
-- As alternativas e o gabarito devem corresponder corretamente a cada versão.
-- Cada simulado tem seu próprio título: # MATÉRIA - V1, depois # MATÉRIA - V2, e assim por diante.
-- Não escreva nada entre um simulado e outro além do título do próximo.
+Análise de anos anteriores:
+Busque nas fontes "Etapa ETAPA - TIPO MATÉRIA (ANO).pdf". Se encontrar, analise antes de gerar:
+- O conteúdo cobrado é o mesmo pedido agora?
+- O professor é o mesmo? (veja cabeçalho/rodapé)
+- Há padrão no formato e estrutura das perguntas?
+- Quais verbos de comando ele usa? (ex.: "Cite...", "Explique...", "Assinale...")
+- Há pontuação por questão? Se sim, use a mesma distribuição.
+Se encontrar padrões, ajuste tom, vocabulário e formato ao estilo do professor — mas siga o conteúdo pedido agora. Sem arquivos anteriores, ignore esta etapa.
 
-Ao gerar, responda SOMENTE no formato abaixo, sem nenhum texto extra antes ou depois, seguindo EXATAMENTE estas regras:
-- O título vem após "# ", no formato:  # MATÉRIA - V1
-- As seções são exatamente "## Múltipla Escolha" e "## Discursivas".
-- Cada pergunta começa com o número em negrito: **1.**, **2.**, etc. (recomece a numeração em cada simulado).
-- Cada alternativa fica em uma linha começando com "- A)", "- B)", "- C)", "- D)".
-- A resposta certa vem em "> Correta: X" (apenas a letra).
-- A explicação vem em "> Comentário: ...".
-- Nas discursivas, a resposta esperada vem em "> Resposta: ...".
-- Fórmulas matemáticas devem vir em LaTeX entre cifrões: $\\sqrt{16}$, $\\frac{3}{4}$, $x^2$.
-- Em cada simulado, o total de questões deve respeitar a divisão por tipo (múltipla/discursiva) e os níveis de dificuldade do fim — as duas somas devem ser iguais.
+Regras dos simulados:
+- Mesmo conteúdo em todas as versões, mas SEM repetir enunciados.
+- Reformule perguntas e troque valores/exemplos a cada versão.
+- Gabarito e alternativas devem corresponder a cada versão.
+- Título de cada simulado: # MATÉRIA - V1, # MATÉRIA - V2, etc.
+- Nada entre simulados além do próximo título.
 
-Siga este modelo exato (exemplo com 2 simulados):
+Formato obrigatório (responda SOMENTE assim, sem texto extra):
+- Seções: ## Múltipla Escolha  e  ## Discursivas
+- Perguntas em negrito: **1.**, **2.**, etc. (reinicie a cada simulado)
+- Alternativas: - A)  - B)  - C)  - D)
+- Resposta certa: > Correta: X  (só a letra)
+- Explicação: > Comentário: ...
+- Discursivas: > Resposta: ...
+- Fórmulas LaTeX entre cifrões: $\\sqrt{16}$, $\\frac{3}{4}$, $x^2$
+- Total de questões = soma dos níveis de dificuldade
+
+Modelo (replique esta estrutura para cada simulado):
 
 # Matéria - V1
 
 ## Múltipla Escolha
 
-**1.** Texto da pergunta, podendo ter fórmula como $\\sqrt{25}$?
-- A) Primeira alternativa.
-- B) Segunda alternativa.
-- C) Terceira alternativa.
-- D) Quarta alternativa.
+**1.** Enunciado da questão, com fórmula se necessário: $\\sqrt{25}$?
+- A) Alternativa.
+- B) Alternativa.
+- C) Alternativa correta.
+- D) Alternativa.
 > Correta: C
-> Comentário: Explicação curta do porquê a alternativa C está certa.
+> Comentário: Explicação curta.
 
 ## Discursivas
 
-**2.** Texto da pergunta discursiva.
-> Resposta: Resposta esperada, explicada de forma objetiva.
-
-# Matéria - V2
-
-## Múltipla Escolha
-
-**1.** O mesmo conteúdo perguntado de outra forma, com valores diferentes?
-- A) Primeira alternativa.
-- B) Segunda alternativa.
-- C) Terceira alternativa.
-- D) Quarta alternativa.
-> Correta: A
-> Comentário: Explicação curta da resposta.
-
-## Discursivas
-
-**2.** Pergunta discursiva reformulada, sobre o mesmo tema.
+**2.** Enunciado da questão discursiva.
 > Resposta: Resposta esperada.
 
-Quantidade de simulados: QUANTIDADE DE SIMULADOS
-
-Conteúdo da prova:
-"CONTEÚDO DA PROVA AQUI"
-
-Níveis de dificuldade por simulado (quantas questões de cada):
-- Fácil = 0
-- Médio = 10
-- Difícil = 10`;
+Qtd. de simulados: QUANTIDADE
+Conteúdo: "CONTEÚDO AQUI"
+Dificuldade: Fácil = 0 / Médio = 10 / Difícil = 10
+Tipo: PROVA ou TESTE
+Etapa: ETAPA X`;
 
 const ACCENT_OPTIONS = ['#FF8552', '#297373', '#39393A', '#010400'];
 const TWEAK_DEFAULTS = { accent: '#FF8552', paperScale: 1, answerLines: 4 };
@@ -532,6 +519,7 @@ function fmt(s) {
       return esc(part); // fórmula: mantém para o MathJax, só protege < > &
     }
     return esc(part)
+      .replace(/\n/g, '<br>')
       .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')   // **negrito**
       .replace(/\*(.+?)\*/g, '<i>$1</i>');      // *itálico*
   }).join('');
@@ -584,24 +572,24 @@ function parseExam(src) {
       continue;
     }
 
-    // Pergunta: **1.** / 1. / 1) / 1 -
-    const qline = line.replace(/^\*+/, '').trim();
-    if ((m = qline.match(/^(\d+)\s*[.)\-]\s*(.*)/))) {
+    // Pergunta: exige negrito **1.** ou **2)** para não confundir com sub-itens de lista
+    if ((m = line.match(/^\*\*(\d+)\s*[.)\-]\s*\*\*\s*(.*)/))) {
       flush(); sawQ = true;
-      const stmt = m[2].replace(/^\*+/, '').trim();
-      cur = { type: 'question', statement: stmt, options: [], correta: '', comentario: '', resposta: '' };
+      cur = { type: 'question', statement: m[2].trim(), options: [], correta: '', comentario: '', resposta: '' };
       continue;
     }
 
-    // Alternativa: - A) / A) / (a)
-    if (cur && (m = line.match(/^[-*(]?\s*([A-Ea-e])\s*[.)\-:]\s+(.*)/))) {
+    // Alternativa: exige prefixo "- " para não confundir com listas de sub-itens
+    if (cur && (m = line.match(/^-\s+([A-Ea-e])\s*[.)]\s+(.*)/))) {
       cur.options.push(m[2].trim());
       continue;
     }
 
-    // Continuação do enunciado
-    if (cur) { cur.statement += ' ' + line; }
-    else { blocks.push({ type: 'text', text: line }); }
+    // Continuação do enunciado — item de lista recebe quebra de linha, demais recebem espaço
+    if (cur) {
+      const isList = /^(\d+|[a-zA-Z])\s*[.)]\s+/.test(line) || /^\(\s*\)\s+/.test(line);
+      cur.statement += (cur.statement ? (isList ? '\n' : ' ') : '') + line;
+    } else { blocks.push({ type: 'text', text: line }); }
   }
   flush();
   return { title, blocks };
