@@ -179,7 +179,7 @@
   .gp-modal { max-width: 680px; }
   .gp-body { padding: 0 24px 4px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
   .gp-field { display: flex; flex-direction: column; gap: 6px; }
-  .gp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .gp-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 14px; }
   .gp-label {
     font-size: 12px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.05em; color: var(--muted);
@@ -497,6 +497,10 @@
         <div class="gp-field">
           <label class="gp-label" for="gpEtapa">Etapa</label>
           <input class="gp-input" type="text" id="gpEtapa" placeholder="Ex.: 2">
+        </div>
+        <div class="gp-field">
+          <label class="gp-label" for="gpNSimulados">N de simulados</label>
+          <input class="gp-input" type="number" id="gpNSimulados" min="1" max="10" placeholder="Ex.: 3">
         </div>
       </div>
 
@@ -921,6 +925,8 @@ function buildGerarPrompt() {
   const etapa    = document.getElementById('gpEtapa').value.trim();
   const fontesRaw = document.getElementById('gpFontes').value.trim();
 
+  const nsim = document.getElementById('gpNSimulados').value.trim();
+
   let p = PROMPT_EXEMPLO;
 
   // Substitui fontes
@@ -930,10 +936,14 @@ function buildGerarPrompt() {
     p = p.replace('"Etapa ETAPA - TIPO MATÉRIA (ANO).pdf"', str);
   }
 
-  // Substitui conteúdo, tipo e etapa
+  // Substitui conteúdo, tipo, etapa e n de simulados
   p = p.replace('"CONTEÚDO AQUI"', conteudo ? `"${conteudo}"` : '"CONTEÚDO AQUI"');
   if (tipo)  p = p.replace('PROVA ou TESTE', tipo);
   if (etapa) p = p.replace('ETAPA X', etapa);
+  if (nsim) {
+    p = p.replace('Gere QUANTIDADE simulados', `Gere ${nsim} simulados`);
+    p = p.replace('Qtd. de simulados: QUANTIDADE', `Qtd. de simulados: ${nsim}`);
+  }
 
   return p;
 }
@@ -947,6 +957,7 @@ document.getElementById('gpLimpar').addEventListener('click', () => {
   document.getElementById('gpConteudo').value = '';
   document.getElementById('gpTipo').value = '';
   document.getElementById('gpEtapa').value = '';
+  document.getElementById('gpNSimulados').value = '';
   document.getElementById('gpFontes').value = '';
 });
 
