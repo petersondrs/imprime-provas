@@ -163,6 +163,48 @@
   }
   .btn-copy:hover { filter: brightness(1.04); }
 
+  /* Botão Gerar Prompt (header) */
+  .gerar-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--serif); font-size: 15px; color: #fff;
+    background: var(--coral); border: none; border-radius: 9px;
+    padding: 9px 15px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255, 133, 82, 0.28);
+    transition: filter .15s ease;
+  }
+  .gerar-btn:hover { filter: brightness(1.06); }
+  .gerar-btn svg { stroke: #fff; }
+
+  /* Modal Gerar Prompt — formulário */
+  .gp-modal { max-width: 680px; }
+  .gp-body { padding: 0 24px 4px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+  .gp-field { display: flex; flex-direction: column; gap: 6px; }
+  .gp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .gp-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted);
+  }
+  .gp-label .req { color: var(--coral); margin-left: 2px; }
+  .gp-input, .gp-select, .gp-textarea {
+    font-family: var(--serif); font-size: 14.5px; color: var(--ink);
+    background: #fafaf9; border: 1px solid var(--line);
+    border-radius: 9px; padding: 10px 13px; width: 100%;
+    transition: border-color .15s ease, box-shadow .15s ease;
+    outline: none;
+  }
+  .gp-input:focus, .gp-select:focus, .gp-textarea:focus {
+    border-color: var(--coral); box-shadow: 0 0 0 3px rgba(255,133,82,.12);
+  }
+  .gp-textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+  .gp-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .btn-secondary {
+    font-family: var(--serif); font-size: 15px; color: var(--muted);
+    background: transparent; border: 1px solid var(--line);
+    border-radius: 9px; padding: 10px 18px; cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .btn-secondary:hover { background: #f4f4f2; border-color: var(--muted); color: var(--ink); }
+
   /* Workspace */
   .workspace { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(360px, 0.82fr) 1.18fr; }
 
@@ -295,6 +337,15 @@
     <span class="app-sub">Editor de provas para impressão</span>
 
     <div class="header-actions">
+      <button class="gerar-btn" id="gerarPromptBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+        Gerar Prompt
+      </button>
+
       <button class="prompt-btn" id="promptBtn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -413,6 +464,53 @@
     <pre class="modal-pre" id="promptText"></pre>
     <div class="modal-actions">
       <button class="btn-copy" id="copyPrompt">Copiar prompt</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="gerarModal">
+  <div class="modal gp-modal">
+    <div class="modal-head">
+      <h3>Gerar Prompt</h3>
+      <button class="modal-close" id="gerarModalClose" aria-label="Fechar">&times;</button>
+    </div>
+    <p class="modal-desc">Preencha os campos e clique em <strong>Copiar prompt</strong> — cole direto no Gemini ou NotebookLM.</p>
+
+    <div class="gp-body">
+      <div class="gp-field">
+        <label class="gp-label" for="gpConteudo">Conteúdo da prova <span class="req">*</span></label>
+        <textarea class="gp-textarea" id="gpConteudo" rows="4"
+          placeholder="Ex.: Capítulo 5 – Concordância Nominal; Regras de acentuação. Capítulo 6 – Pronomes pessoais e possessivos."></textarea>
+      </div>
+
+      <div class="gp-row">
+        <div class="gp-field">
+          <label class="gp-label" for="gpTipo">Tipo de avaliação</label>
+          <select class="gp-select" id="gpTipo">
+            <option value="">Selecione…</option>
+            <option value="Prova">Prova</option>
+            <option value="Teste">Teste</option>
+            <option value="Simulado">Simulado</option>
+            <option value="Exercícios">Exercícios</option>
+          </select>
+        </div>
+        <div class="gp-field">
+          <label class="gp-label" for="gpEtapa">Etapa</label>
+          <input class="gp-input" type="text" id="gpEtapa" placeholder="Ex.: 2">
+        </div>
+      </div>
+
+      <div class="gp-field">
+        <label class="gp-label" for="gpFontes">Fontes no NotebookLM</label>
+        <input class="gp-input" type="text" id="gpFontes"
+          placeholder="Etapa 2 - Prova Historia (2025).pdf, Livro Historia 8 Ano.pdf">
+        <span class="gp-hint">Separe os nomes dos arquivos por vírgula.</span>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="gpLimpar">Limpar</button>
+      <button class="btn-copy" id="gpCopiar">Copiar prompt</button>
     </div>
   </div>
 </div>
@@ -811,6 +909,60 @@ document.getElementById('copyPrompt').addEventListener('click', (e) => {
     navigator.clipboard.writeText(PROMPT_EXEMPLO).then(() => done('Copiado!')).catch(() => done('Selecione e copie manualmente'));
   } else {
     done('Selecione e copie manualmente');
+  }
+});
+
+/* ---------- Modal "Gerar Prompt" ---------- */
+const gerarModal = document.getElementById('gerarModal');
+
+function buildGerarPrompt() {
+  const conteudo = document.getElementById('gpConteudo').value.trim();
+  const tipo     = document.getElementById('gpTipo').value;
+  const etapa    = document.getElementById('gpEtapa').value.trim();
+  const fontesRaw = document.getElementById('gpFontes').value.trim();
+
+  let p = PROMPT_EXEMPLO;
+
+  // Substitui fontes
+  if (fontesRaw) {
+    const lista = fontesRaw.split(',').map(f => f.trim()).filter(Boolean);
+    const str = lista.map(f => `"${f}"`).join(', ');
+    p = p.replace('"Etapa ETAPA - TIPO MATÉRIA (ANO).pdf"', str);
+  }
+
+  // Substitui conteúdo, tipo e etapa
+  p = p.replace('"CONTEÚDO AQUI"', conteudo ? `"${conteudo}"` : '"CONTEÚDO AQUI"');
+  if (tipo)  p = p.replace('PROVA ou TESTE', tipo);
+  if (etapa) p = p.replace('ETAPA X', etapa);
+
+  return p;
+}
+
+document.getElementById('gerarPromptBtn').addEventListener('click', () => gerarModal.classList.add('open'));
+document.getElementById('gerarModalClose').addEventListener('click', () => gerarModal.classList.remove('open'));
+gerarModal.addEventListener('click', (e) => { if (e.target === gerarModal) gerarModal.classList.remove('open'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') gerarModal.classList.remove('open'); });
+
+document.getElementById('gpLimpar').addEventListener('click', () => {
+  document.getElementById('gpConteudo').value = '';
+  document.getElementById('gpTipo').value = '';
+  document.getElementById('gpEtapa').value = '';
+  document.getElementById('gpFontes').value = '';
+});
+
+document.getElementById('gpCopiar').addEventListener('click', (e) => {
+  const btn = e.currentTarget;
+  const conteudo = document.getElementById('gpConteudo').value.trim();
+  if (!conteudo) {
+    document.getElementById('gpConteudo').focus();
+    return;
+  }
+  const texto = buildGerarPrompt();
+  const done = (txt) => { const o = btn.textContent; btn.textContent = txt; setTimeout(() => { btn.textContent = o; }, 1800); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(() => done('Copiado!')).catch(() => done('Selecione e copie'));
+  } else {
+    done('Selecione e copie');
   }
 });
 
